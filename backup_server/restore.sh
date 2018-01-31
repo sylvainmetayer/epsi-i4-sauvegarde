@@ -31,7 +31,6 @@ restore_last_daily_backup() {
         echo "Their is no backup to restore."
         exit "${ERRORS[NO_BACKUP]}"
     fi
-    
 }
 
 menu() {

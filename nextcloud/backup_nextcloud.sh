@@ -1,7 +1,5 @@
 #!/bin/bash
-
 # Full backup, every day at 3pm
-
 # TODO set maintenance mode on
 
 current_date=$(date +%F_%H:%I:%S)
@@ -17,13 +15,9 @@ backup_directory="/home/epsi-backup/backup/"
 nextcloud_directory="/var/www/html/nextcloud/"
 
 current_backup=${backup_directory}${current_date}
-backup_files_directory=${current_backup}"/nextcloud/"
 backup_sql=${current_backup}"/backup.sql"
 
-ssh $ssh_details mkdir -p "${backup_files_directory}"
-
-rsync -e ssh --archive --compress --stats "$nextcloud_directory" "${ssh_details}:${backup_files_directory}"
-
-# TODO BDD dump
+ssh $ssh_details mkdir -p "${current_backup}"
+tar zcvf - "$nextcloud_directory" | ssh ${ssh_details} "cat > ${current_backup}/nextcloud.tar.gz"
 
 # TODO set maintenance mode off
