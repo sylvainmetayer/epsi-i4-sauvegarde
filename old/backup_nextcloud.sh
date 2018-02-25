@@ -32,12 +32,9 @@ current_date=$(date +%F_%H:%M:%S)
 current_backup=${backup_directory}${current_date}
 backup_sql=${current_backup}"/${sql_file_name}"
 
-echo "${current_date} : Going to perform a full backup of the Nextcloud application."
 echo "Backup will be located at ${ssh_details}:${current_backup}"
 
 ssh $ssh_details mkdir -p "${current_backup}"
 cd $nextcloud_directory && tar zcf - . | ssh ${ssh_details} "cat > ${current_backup}/${file_archive_name}.tar.gz"
-
-echo "Files backed up ! Going to perform a backup of the database."
 
 # TODO set maintenance mode off
