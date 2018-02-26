@@ -5,8 +5,8 @@
 # make sure that SSH key are available, or script will wait for password.
 # Also make sure that user has write permissions on destination folder
 SSH_DETAILS="epsi-nextcloud@192.168.56.101"
-BACKUP_LOCATION="/home/user"
-RESTAURATION_LOCATION="/home/user/test"
+BACKUP_LOCATION="/home/epsi-backup/backup" # No trailing /
+RESTAURATION_LOCATION="/var/www/html/nextcloud" # No trailing /
 
 # Do not edit below
 CURRENT_DATE=$(date +%s)
