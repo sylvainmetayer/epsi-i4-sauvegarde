@@ -83,7 +83,7 @@ do
 done
 
 ssh $SSH_DETAILS mkdir -p "$BACKUP_LOCATION/$incremental_folder"
-rsync -arv --delete $BACKUP_DIR/ $SSH_DETAILS:$BACKUP_LOCATION/$incremental_folder
+rsync -arv --delete $BACKUP_DIR/ $SSH_DETAILS:$BACKUP_LOCATION/$incremental_folder >/dev/null
 
 nb_of_complete_bck=${#complete_backup[@]}
 
@@ -103,7 +103,6 @@ else
         ssh $SSH_DETAILS "cd $BACKUP_LOCATION/$incremental_folder && tar -cvjf $BACKUP_LOCATION/${CURRENT_DATE}.tar.bz2 . >/dev/null"
     else
         echo "Their is no need to make a complete backup right now."
-    
     fi
 fi
 
