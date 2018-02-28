@@ -7,6 +7,7 @@
 SSH_DETAILS="epsi-nextcloud@192.168.56.101"
 BACKUP_LOCATION="/home/epsi-backup/backup" # No trailing /
 RESTAURATION_LOCATION="/var/www/html/nextcloud" # No trailing /
+SQL_DB="nextcloud"
 
 # Do not edit below
 CURRENT_DATE=$(date +%s)
@@ -21,16 +22,17 @@ do
     echo "Which one to restore ? (ctrl-c to quit)"
     iterator=0
     for file in ${BACKUP_LOCATION}/*; do
-        if test -d "$file"; then
-            iterator=$((iterator + 1))
-            echo "${iterator} - " "Restore last incremental backup"
-        elif [[ $file =~ ^.*\.sql$ ]]; then
+        if [[ $file =~ ^.*\.sql$ ]]; then
             continue
+        fi
+        iterator=$((iterator + 1))
+        echo -n "${iterator} - "
+        if test -d "$file"; then
+            echo "Restore last incremental backup"
         else 
-            iterator=$((iterator + 1))
             filename=$(basename "$file")
             format_date=$(date -d @"${filename%%.*}")
-            echo "${iterator} - " "$format_date"
+            echo "$format_date"
         fi
     done
 
@@ -61,12 +63,25 @@ for file in ${BACKUP_LOCATION}/*; do
     fi
 done
 
+echo $restauration_file
+
+echo "When prompted, you will need to enter the root password and the MySQL root password. "
+# This is the restauration phase, we need to drop / recreate the database.
+# With recent MySQL version, by default we can only access MySQL root account with sudo / root privileges
+
+set -x
 ssh $SSH_DETAILS rm -rf "$RESTAURATION_LOCATION && mkdir -p $RESTAURATION_LOCATION"
 if test -f "$restauration_file"; then
     filename=$(basename "$restauration_file")
     echo "I will restore $restauration_file"
     scp "$restauration_file" "${SSH_DETAILS}:${RESTAURATION_LOCATION}/"
     ssh $SSH_DETAILS "tar xf ${RESTAURATION_LOCATION}/$filename -C ${RESTAURATION_LOCATION} && rm -f ${RESTAURATION_LOCATION}/$filename"
+    echo "Files restaured !"
+    # TODO Fix this!
+    ssh $SSH_DETAILS "su root && mysql -u root -p 'DROP database $SQL_DB; create database $SQL_DB;'"
+    scp "${restauration_file%%.*}.sql" "$SSH_DETAILS:~"
+    ssh $SSH_DETAILS "su root && mysql -u root -p < ~/${restauration_file%%.*}.sql"
+    echo "Database restaured !"
 else 
     echo "I will restore last incremental backup : $file"
     scp -r "${restauration_file}"/* ${SSH_DETAILS}:${RESTAURATION_LOCATION}
