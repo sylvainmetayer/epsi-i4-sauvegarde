@@ -21,16 +21,16 @@ do
     echo "Which one to restore ? (ctrl-c to quit)"
     iterator=0
     for file in ${BACKUP_LOCATION}/*; do
-        iterator=$((iterator + 1))
-        echo -n "${iterator} - "
         if test -d "$file"; then
-            echo "Restore last incremental backup"
+            iterator=$((iterator + 1))
+            echo "${iterator} - " "Restore last incremental backup"
         elif [[ $file =~ ^.*\.sql$ ]]; then
-            echo "SQL FILE !"
+            continue
         else 
+            iterator=$((iterator + 1))
             filename=$(basename "$file")
             format_date=$(date -d @"${filename%%.*}")
-            echo "$format_date"
+            echo "${iterator} - " "$format_date"
         fi
     done
 
@@ -52,12 +52,11 @@ done
 
 iterator=0
 for file in ${BACKUP_LOCATION}/*; do
+    if [[ $file =~ ^.*\.sql$ ]]; then
+        continue
+    fi
     iterator=$((iterator + 1))
     if [[ $user_choice -eq $iterator ]]; then 
-        if [[ $file =~ ^.*\.sql$ ]]; then
-            echo "FILE SQL !"
-            continue
-        fi
         restauration_file=$file
     fi
 done
