@@ -125,3 +125,5 @@ done
 echo "Finish backup !"
 
 # TODO Backup Database
+
+# TODO Before backing up mysql database, stop slave, backup salve, and restart slave. So no downtime on nextcloud app :)
