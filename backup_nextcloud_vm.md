@@ -4,11 +4,16 @@
 
 1. Create an user 'epsi-backup' and add a ssh key *without* passphrase.
 
+    ```bash
+    sudo adduser epsi-backup && sudo su epsi-backup
+    ssh-keygen -t rsa -b 8192 -C "BACKUP@BACKUP"
+    ```
+
 2. add to the `/home/epsi-backup/.ssh/authorized_keys` the public key of  `epsi-nextcloud` user (from the nextcloud VM)
 
 3. Copy restore.sh script to the $HOME of epsi-backup. `scp restore.sh epsi-backup@192.200.0.3:~`
 
-4. `sudo apt update && sudo apt install mysql-server mysql-client rsync`
+4. `sudo apt update && sudo apt install mysql-server mysql-client rsync curl`
 
 5. Set up SLAVE MySQL.
 
@@ -35,13 +40,20 @@
         - START SLAVE;
         - SHOW SLAVE STATUS\G; // to check that it is ok
 
+    h. Create an user for the backup of database.
+
+        - create user 'backup'@'localhost' identified by 'backup';
+        - GRANT SELECT, SHOW VIEW, LOCK TABLES ON nextcloud.* to 'backup'@'localhost' identified by 'backup';
+        - GRANT REPLICATION SLAVE on *.* to 'backup'@'localhost';
+        - flush privileges;
+
 6. Fill the required data in `restore.sh`
 
-```bash
-SSH_DETAILS="epsi-nextcloud@192.168.56.101" # The ssh_details to access to the nextcloud VM
-BACKUP_LOCATION="/home/epsi-backup/backup" # The location of your backup, on the Backup VM. /!\ No trailing '/' /!\
-RESTAURATION_LOCATION="/var/www/html/nextcloud" # Where you want to restore the data, on the nextcloud VM. /!\ No trailing '/' /!\
-```
+    ```bash
+    SSH_DETAILS="epsi-nextcloud@192.168.56.101" # The ssh_details to access to the nextcloud VM
+    BACKUP_LOCATION="/home/epsi-backup/backup" # The location of your backup, on the Backup VM. /!\ No trailing '/' /!\
+    RESTAURATION_LOCATION="/var/www/html/nextcloud" # Where you want to restore the data, on the nextcloud VM. /!\ No trailing '/' /!\
+    ```
 
 ## Restauration
 

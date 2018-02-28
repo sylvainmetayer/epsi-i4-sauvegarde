@@ -25,6 +25,8 @@ do
         echo -n "${iterator} - "
         if test -d "$file"; then
             echo "Restore last incremental backup"
+        elif [[ $file =~ ^.*\.sql$ ]]; then
+            echo "SQL FILE !"
         else 
             filename=$(basename "$file")
             format_date=$(date -d @"${filename%%.*}")
@@ -52,6 +54,10 @@ iterator=0
 for file in ${BACKUP_LOCATION}/*; do
     iterator=$((iterator + 1))
     if [[ $user_choice -eq $iterator ]]; then 
+        if [[ $file =~ ^.*\.sql$ ]]; then
+            echo "FILE SQL !"
+            continue
+        fi
         restauration_file=$file
     fi
 done

@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=2029
 
 # make sure that SSH key are available, or script will wait for password.
 # Also make sure that user has write permissions on destination folder
@@ -8,6 +9,9 @@ BACKUP_LOCATION="/home/epsi-backup/backup"
 WEBSITE="https://nextcloud.site.com"
 ONE_COMPLETE_EVERY_X_DAYS=10
 KEEP_X_COMPLETE=3
+SQL_USER=backup # On remote host
+SQL_PASSWORD=backup # On remote host
+SQL_DB=nextcloud # On remote host
 
 # Do not edit below
 CURRENT_DATE=$(date +%s)
@@ -33,6 +37,12 @@ notify_user ()
     fi
 }
 
+backup_mysql () 
+{
+    ssh $SSH_DETAILS mysqldump -u $SQL_USER -p$SQL_PASSWORD $SQL_DB --databases --single-transaction > "$HOME/$CURRENT_DATE.sql"
+    scp "$HOME/$CURRENT_DATE.sql" $SSH_DETAILS:$BACKUP_LOCATION
+}
+
 check_status () 
 {
     # Is site up ? If not, don't make backup, because something is probably broken.
@@ -48,12 +58,7 @@ check_status ()
         notify_user my_false "Site appears to be unavailable. I won't make backup that would be unusuable."
     fi
 
-    if [[ ! -d $BACKUP_LOCATION ]]; then
-        mkdir -p $BACKUP_LOCATION
-        if [[ "$?" -ne 0 ]]; then
-            notify_user my_false "Failed to create backup directory !"
-        fi
-    fi
+    # TODO Check location ?
 
     if [[ ! -d $BACKUP_DIR ]]; then
         notify_user false "Their is no directory to backup,  '$BACKUP_DIR)' doesn't exist !"
@@ -82,6 +87,7 @@ do
     ((n++))
 done
 
+echo "TODO Set maintenance ON"
 ssh $SSH_DETAILS mkdir -p "$BACKUP_LOCATION/$incremental_folder"
 rsync -arv --delete $BACKUP_DIR/ $SSH_DETAILS:$BACKUP_LOCATION/$incremental_folder >/dev/null
 
@@ -94,6 +100,7 @@ if [[ $nb_of_complete_bck -le 0 ]]; then
     if ! ssh $SSH_DETAILS tar tf "$BACKUP_LOCATION/${CURRENT_DATE}.tar.bz2" >/dev/null ; then
         notify_user my_false "Error while creating tar file."
     fi
+    backup_mysql
 else
     most_recent=$(basename "${complete_backup[0]}")
     most_recent=${most_recent%%.*}
@@ -101,12 +108,14 @@ else
     if [[ $delta -gt $timestamp_before_complete_bck ]]; then 
         echo "Time to make a new complete backup !"
         ssh $SSH_DETAILS "cd $BACKUP_LOCATION/$incremental_folder && tar -cvjf $BACKUP_LOCATION/${CURRENT_DATE}.tar.bz2 . >/dev/null"
+        backup_mysql
     else
         echo "Their is no need to make a complete backup right now."
     fi
 fi
 
 echo "Backup complete. Check old one to delete. We'll keep the ${KEEP_X_COMPLETE} most recent complete backup."
+echo "TODO Set maintenance OFF"
 
 complete_backup_str=$(ssh $SSH_DETAILS "ls ${BACKUP_LOCATION}/*.tar.bz2 2>/dev/null | xargs | tr ' ' '\n' | sort -r")
 n=0
@@ -120,10 +129,8 @@ do
     fi
     echo "Going to delete $SSH_DETAILS:$i"
     ssh $SSH_DETAILS rm "$i"
+    echo "Going to delete ${i%%.*}.sql"
+    ssh $SSH_DETAILS rm "${i%%.*}.sql"
 done
 
 echo "Finish backup !"
-
-# TODO Backup Database
-
-# TODO Before backing up mysql database, stop slave, backup salve, and restart slave. So no downtime on nextcloud app :)
