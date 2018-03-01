@@ -2,14 +2,14 @@
 
 ## Setup
 
-1. Create an user 'epsi-backup' and add a ssh key *without* passphrase.
+1. Create an user 'epsi-backup' and add to this user a ssh key *without* passphrase.
 
     ```bash
-    sudo adduser epsi-backup && sudo su epsi-backup
-    ssh-keygen -t rsa -b 8192 -C "BACKUP@BACKUP"
+    # sudo adduser epsi-backup && sudo su epsi-backup
+    $ ssh-keygen -t rsa -b 8192 -C "BACKUP@BACKUP"
     ```
 
-2. add to the `/home/epsi-backup/.ssh/authorized_keys` the public key of  `epsi-nextcloud` user (from the nextcloud VM)
+2. add to the `/home/epsi-nextcloud/.ssh/authorized_keys` the public key of  `epsi-backup` user (from the Backup VM)
 
 3. Copy restore.sh script to the $HOME of epsi-backup. `scp restore.sh epsi-backup@192.200.0.3:~`
 
@@ -54,6 +54,8 @@
     BACKUP_LOCATION="/home/epsi-backup/backup" # The location of your backup, on the Backup VM. /!\ No trailing '/' /!\
     RESTAURATION_LOCATION="/var/www/html/nextcloud" # Where you want to restore the data, on the nextcloud VM. /!\ No trailing '/' /!\
     ```
+
+7. `sudo mysql_secure_installation` (optional, but recommanded)
 
 ## Restauration
 

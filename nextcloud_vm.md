@@ -2,7 +2,7 @@
 
 ## Setup
 
-1. Create an user 'epsi-nextcloud' and add a ssh key *without* passphrase.
+1. Create an user 'epsi-nextcloud' and add to this user a ssh key *without* passphrase.
 
     ```bash
     sudo adduser epsi-nextcloud && sudo su epsi-nextcloud
@@ -11,7 +11,7 @@
 
 2. add to the `/home/epsi-backup/.ssh/authorized_keys` the public key of  `epsi-backup` user (from the nextcloud VM)
 
-3. Copy backup.sh script to the $HOME of epsi-backup. `scp backup.sh epsi-nextcloud@192.200.0.2:~`
+3. Copy backup.sh script to the $HOME of epsi-nextcloud. `scp backup.sh epsi-nextcloud@192.200.0.2:~`
 
 4. `sudo apt update && sudo apt install mysql-server mysql-client rsync curl`
 
@@ -22,6 +22,8 @@
 7. `# chown -R www-data: /var/www/`
 
 8. `# chmod -R 2770 /var/www/`
+
+    This is to make sure that the group www-data will have write permissions
 
 9. Setup Master MySQL replication
 
@@ -46,6 +48,11 @@
         - `mysql -u root -p nextcloud > script.sql`
         # Go back to a MySQL terminal as root
         - UNLOCK TABLES;
+        # Create restauration user
+        - create user "restore"@"localhost" identified by "restore";
+        - grant all privileges on nextcloud.* to "restore"@"localhost";
+        - grant DROP, CREATE on nextcloud.* to "restore"@"localhost";
+        - flush privileges;
 
 10. Fill the required data in `backup.sh`
 
@@ -57,5 +64,7 @@
     ONE_COMPLETE_EVERY_X_DAYS=10 # Make a complete backup every X days, e.g every 10 days.
     KEEP_X_COMPLETE=3 # Keep the X most recent complete backup, e.g keep the 3 most recent
     ```
+
+11. `sudo mysql_secure_installation` (optional, but recommanded)
 
 With this configuration, it means we have a 30 days complete backup image (10*3) + an incremental backup.
