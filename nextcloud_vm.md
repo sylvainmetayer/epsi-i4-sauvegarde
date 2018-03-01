@@ -13,6 +13,14 @@
 
 3. Copy backup.sh script to the $HOME of epsi-nextcloud. `scp backup.sh epsi-nextcloud@192.200.0.2:~`
 
+    a. Upload then the backup_vars.sh which will contain encrypted variables.
+
+    b. `scp backup_vars.sh epsi-nextcloud@192.200.0.2:~`
+
+    c. Fill variables of backup_vars.sh
+
+    d. ``
+
 4. `sudo apt update && sudo apt install mysql-server mysql-client rsync curl`
 
 5. Make sure the nextcloud is well configured (nginx, write access, ...)
