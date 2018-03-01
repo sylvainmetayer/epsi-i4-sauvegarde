@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # make sure that SSH key are available, or script will wait for password.
-# Also make sure that user has write permissions on destination folder
 export SSH_DETAILS="epsi-nextcloud@192.168.56.101"
 
 # The **local** folder where are stored our backup. No trailing '/' ! 

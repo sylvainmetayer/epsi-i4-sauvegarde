@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # make sure that SSH key are available, or script will wait for password.
-# Also make sure that user has write permissions on destination folder
 export SSH_DETAILS="epsi-backup@192.168.56.102"
 
 # The *distant* folder where we want to store the backup
@@ -11,7 +10,7 @@ export BACKUP_DIR="/var/www/html/nextcloud"
 export BACKUP_LOCATION="/home/epsi-backup/backup"
 
 # The website URL.
-# This is use to check that the website is on, before going to backup the site.
+# This is used to check that the website is up before going to backup the site.
 # If the website if down, there is no need to make a corrupted/unusable backup
 export WEBSITE="https://nextcloud.site.com"
 

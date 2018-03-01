@@ -67,11 +67,11 @@
         epsi-nextcloud ALL=(ALL) NOPASSWD: /bin/chmod
     ```
 
-
 ## Backup
 
 `$ ./backup.sh`
 
 ## Cron example
 
-` * * ** * * /home/epsi-nextcloud/backup.sh`
+`$ crontab -e # As epsi-nextcloud`
+`0 */12 * * * /home/epsi-nextcloud/backup.sh >/dev/null 2>&1`
