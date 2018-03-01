@@ -1,15 +1,13 @@
 #!/bin/bash
 # shellcheck disable=2029
 
-if ! test -f backup_plain; then
+if ! test -f ~/vars.sh; then
     echo "ERROR, secrets missing !"
     exit 1
 fi
 
-openssl rsautl -decrypt -inkey ~/.ssh/id_rsa -in backup_vars.sh.dat -out backup_vars.sh
-
-chmod +x ./backup_vars.sh
-source ./backup_vars.sh
+chmod +x ~/vars.sh
+source ~/vars.sh
 
 CURRENT_DATE=$(date +%s)
 LOG_FILE="/tmp/backup_${CURRENT_DATE}.log"
@@ -28,7 +26,7 @@ fatal_error ()
 
 backup_mysql () 
 {
-    ssh "$SSH_DETAILS" mysqldump -u "$SQL_USER" -p$SQL_PASSWORD "$SQL_DB" --databases --single-transaction > "$HOME/$CURRENT_DATE.sql"
+    ssh "$SSH_DETAILS" mysqldump -u "$SQL_USER" -p"$SQL_PASSWORD" "$SQL_DB" --databases --single-transaction > "$HOME/$CURRENT_DATE.sql"
     scp "$HOME/$CURRENT_DATE.sql" "$SSH_DETAILS:$BACKUP_LOCATION"
 }
 
@@ -72,7 +70,6 @@ do
     ((n++))
 done
 
-echo "TODO Set maintenance ON"
 ssh "$SSH_DETAILS" mkdir -p "$BACKUP_LOCATION/$incremental_folder"
 rsync -arv --delete "$BACKUP_DIR/" "$SSH_DETAILS:$BACKUP_LOCATION/$incremental_folder" >/dev/null
 
@@ -100,7 +97,6 @@ else
 fi
 
 echo "Backup complete. Check old one to delete. We'll keep the ${KEEP_X_COMPLETE} most recent complete backup."
-echo "TODO Set maintenance OFF"
 
 complete_backup_str=$(ssh "$SSH_DETAILS" "ls ${BACKUP_LOCATION}/*.tar.bz2 2>/dev/null | xargs | tr ' ' '\n' | sort -r")
 n=0
@@ -119,4 +115,3 @@ do
 done
 
 echo "Finish backup !"
-rm ./backup_vars.sh

@@ -2,47 +2,41 @@
 
 ## Setup
 
-1. Create an user 'epsi-nextcloud' and add to this user a ssh key *without* passphrase.
+1. `sudo apt update && sudo apt install mysql-server mysql-client rsync curl ssh`
+
+2. Create an user 'epsi-nextcloud', upload files and run setup_secret.sh.
 
     ```bash
-    sudo adduser epsi-nextcloud && sudo su epsi-nextcloud
-    ssh-keygen -t rsa -b 8192 -C "NEXTCLOUD@NEXTCLOUD"
+    # sudo adduser epsi-nextcloud && sudo su epsi-nextcloud
+    $ scp backup.sh epsi-nextcloud@192.200.0.2:~
+    $ scp backup_vars.sh epsi-nextcloud@192.200.0.2:~/vars.sh
+    $ vim ~/vars.sh # Fill values on backup host, as epsi-nextcloud
+    $ scp setup.sh epsi-nextcloud@192.200.0.2:~
+    $ ./setup.sh
     ```
 
-2. add to the `/home/epsi-backup/.ssh/authorized_keys` the public key of  `epsi-backup` user (from the nextcloud VM)
+3. add to the `/home/epsi-backup/.ssh/authorized_keys` the public key of  `epsi-backup` user
 
-3. Copy backup.sh script to the $HOME of epsi-nextcloud. `scp backup.sh epsi-nextcloud@192.200.0.2:~`
+4. Make sure the nextcloud is well configured (nginx, write access, ...)
 
-    a. Upload then the backup_vars.sh which will contain encrypted variables.
+5. Add the user `epsi-nextcloud` to the www-data group. `sudo adduser epsi-nextcloud www-data`
 
-    b. `scp backup_vars.sh epsi-nextcloud@192.200.0.2:~`
+6. `# chown -R www-data: /var/www/`
 
-    c. Fill variables of backup_vars.sh
-
-    d. ``
-
-4. `sudo apt update && sudo apt install mysql-server mysql-client rsync curl`
-
-5. Make sure the nextcloud is well configured (nginx, write access, ...)
-
-6. Add the user `epsi-nextcloud` to the www-data group. `sudo adduser epsi-nextcloud www-data`
-
-7. `# chown -R www-data: /var/www/`
-
-8. `# chmod -R 2770 /var/www/`
+7. `# chmod -R 2770 /var/www/`
 
     This is to make sure that the group www-data will have write permissions
 
-9. Setup Master MySQL replication
+8. Setup Master MySQL replication
 
-    a. edit the MySQL configuration located at `/etc/mysql/mariadb.conf.d/50-server.cnf` and adapt the configuration.
+    a. edit the MySQL configuration located at `/etc/mysql/mysql.conf.d/mysqld.cnf` and adapt the configuration.
 
         - server-id = 1
         - log_bin = /var/log/mysql/mysql-bin.log
         - binlog_do_db = nextcloud
         - bind-address = 192.200.0.2
 
-    b. restart mysql : `sudo service mysql restart
+    b. restart mysql : `sudo service mysql restart`
 
     c. open a terminal MySQL as root and type the following :
 
@@ -53,7 +47,7 @@
         - use nextcloud;
         - FLUSH TABLES WITH READ LOCK;
         - QUIT;
-        - `mysql -u root -p nextcloud > script.sql`
+        - `mysqldump -u root -p nextcloud > script.sql`
         # Go back to a MySQL terminal as root
         - UNLOCK TABLES;
         # Create restauration user
@@ -62,17 +56,22 @@
         - grant DROP, CREATE on nextcloud.* to "restore"@"localhost";
         - flush privileges;
 
-10. Fill the required data in `backup.sh`
+9. `sudo mysql_secure_installation` (optional, but recommanded)
 
+10. Important !
+
+    - `# sudo visudo`
+    - Add to the end of the file
     ```bash
-    SSH_DETAILS="epsi-backup@192.168.56.102" # The ssh_details to access to the backup VM
-    BACKUP_DIR="/var/www/nextcloud" # The directory you want to backup, on the nextcloud host.
-    BACKUP_LOCATION="/home/epsi-backup/backup" # Where you want to store the backup, on the backup VM.
-    WEBSITE="https://192.200.0.2" # The URL of the nextcloud site.
-    ONE_COMPLETE_EVERY_X_DAYS=10 # Make a complete backup every X days, e.g every 10 days.
-    KEEP_X_COMPLETE=3 # Keep the X most recent complete backup, e.g keep the 3 most recent
+        epsi-nextcloud ALL=(ALL) NOPASSWD: /bin/chown
+        epsi-nextcloud ALL=(ALL) NOPASSWD: /bin/chmod
     ```
 
-11. `sudo mysql_secure_installation` (optional, but recommanded)
 
-With this configuration, it means we have a 30 days complete backup image (10*3) + an incremental backup.
+## Backup
+
+`$ ./backup.sh`
+
+## Cron example
+
+` * * ** * * /home/epsi-nextcloud/backup.sh`

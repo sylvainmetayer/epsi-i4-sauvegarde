@@ -5,7 +5,7 @@
 export SSH_DETAILS="epsi-backup@192.168.56.102"
 
 # The *distant* folder where we want to store the backup
-export BACKUP_DIR="/var/www/nextcloud"
+export BACKUP_DIR="/var/www/html/nextcloud"
 
 # The *local* folder that we want to backup
 export BACKUP_LOCATION="/home/epsi-backup/backup"
@@ -16,7 +16,7 @@ export BACKUP_LOCATION="/home/epsi-backup/backup"
 export WEBSITE="https://nextcloud.site.com"
 
 # Make a complete backup every X days.
-# If you want to make a backup every time the script run, set 0.
+# If you want to make a complete backup every time the script run, set 0.
 export ONE_COMPLETE_EVERY_X_DAYS=0
 
 # Keep the X last complete backup.

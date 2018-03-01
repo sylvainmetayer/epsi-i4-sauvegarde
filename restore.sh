@@ -2,17 +2,13 @@
 # shellcheck disable=2029
 # shellcheck disable=2069
 
-# make sure that SSH key are available, or script will wait for password.
-# Also make sure that user has write permissions on destination folder
-SSH_DETAILS="epsi-nextcloud@192.168.56.101"
-BACKUP_LOCATION="/home/epsi-backup/backup" # No trailing /
-RESTAURATION_LOCATION="/var/www/html/nextcloud" # No trailing /
-SQL_DB="nextcloud" # Remote host
-SQL_USER="restore" # Remote host 
-SQL_PASSWORD="restore" # Remote host
-SQL_LOCAL_DB="nextcloud" # Local, the slave
-SQL_LOCAL_USER="backup" # Local, the slave
-SQL_LOCAL_PASSWORD="backup" # Local, the slave
+if ! test -f ~/vars.sh; then
+    echo "ERROR, secrets missing !"
+    exit 1
+fi
+
+chmod +x ~/vars.sh
+source ~/vars.sh
 
 # Do not edit below
 CURRENT_DATE=$(date +%s)
@@ -31,14 +27,14 @@ restore_db ()
     echo "$sql_location"
     echo "$sql_file"
     echo "Drop/Create database"
-    ssh $SSH_DETAILS "mysql -u $SQL_USER -p${SQL_PASSWORD} $SQL_DB <<< 'DROP DATABASE $SQL_DB;'"
-    ssh $SSH_DETAILS "mysql -u $SQL_USER -p${SQL_PASSWORD} <<< 'CREATE DATABASE $SQL_DB;'"
+    ssh "$SSH_DETAILS" "mysql -u $SQL_USER -p${SQL_PASSWORD} $SQL_DB <<< 'DROP DATABASE $SQL_DB;'"
+    ssh "$SSH_DETAILS" "mysql -u $SQL_USER -p${SQL_PASSWORD} <<< 'CREATE DATABASE $SQL_DB;'"
     echo "Upload $sql_location..."
     scp "$sql_location" "$SSH_DETAILS:~"
     echo "Restauration of $sql_file into $SQL_DB ..."
-    ssh $SSH_DETAILS "mysql -u $SQL_USER -p${SQL_PASSWORD} $SQL_DB < ~/$sql_file"
+    ssh "$SSH_DETAILS" "mysql -u $SQL_USER -p${SQL_PASSWORD} $SQL_DB < ~/$sql_file"
     echo "Delete $sql_file"
-    ssh $SSH_DETAILS "rm $sql_file"
+    ssh "$SSH_DETAILS" "rm $sql_file"
     echo "Database restaured !"
 }
 
@@ -88,18 +84,23 @@ for file in ${BACKUP_LOCATION}/*; do
     fi
 done
 
-ssh $SSH_DETAILS rm -rf "$RESTAURATION_LOCATION && mkdir -p $RESTAURATION_LOCATION"
+ssh "$SSH_DETAILS" sudo chmod -R 2770 "$RESTAURATION_LOCATION"
+ssh "$SSH_DETAILS" rm -rf "$RESTAURATION_LOCATION && mkdir -p $RESTAURATION_LOCATION"
 if test -f "$restauration_file"; then
     filename=$(basename "$restauration_file")
     echo "I will restore $restauration_file"
     scp "$restauration_file" "${SSH_DETAILS}:${RESTAURATION_LOCATION}/"
-    ssh $SSH_DETAILS "tar xf ${RESTAURATION_LOCATION}/$filename -C ${RESTAURATION_LOCATION} && rm -f ${RESTAURATION_LOCATION}/$filename"
+    ssh "$SSH_DETAILS" "tar xf ${RESTAURATION_LOCATION}/$filename -C ${RESTAURATION_LOCATION} && rm -f ${RESTAURATION_LOCATION}/$filename"
     echo "Files restaured !"
+    ssh "$SSH_DETAILS" sudo chown -R www-data "$RESTAURATION_LOCATION"
+    ssh "$SSH_DETAILS" sudo chmod -R 2770 "$RESTAURATION_LOCATION"
     restore_db "${restauration_file%%.*}"
 else 
     echo "I will restore last incremental backup : $file"
-    scp -r "${restauration_file}"/* ${SSH_DETAILS}:${RESTAURATION_LOCATION}*
-    mysqldump -u $SQL_LOCAL_USER -p$SQL_LOCAL_PASSWORD $SQL_LOCAL_DB --databases --single-transaction > "$BACKUP_LOCATION/restore.sql"
+    scp -r "${restauration_file}"/* "${SSH_DETAILS}:${RESTAURATION_LOCATION}*"
+    ssh "$SSH_DETAILS" sudo chown -R www-data "$RESTAURATION_LOCATION"
+    ssh "$SSH_DETAILS" sudo chmod -R 2770 "$RESTAURATION_LOCATION"
+    mysqldump -u "$SQL_LOCAL_USER" -p"$SQL_LOCAL_PASSWORD" "$SQL_LOCAL_DB" --databases --single-transaction > "$BACKUP_LOCATION/restore.sql"
     restore_db "$BACKUP_LOCATION/restore"
     rm "$BACKUP_LOCATION/restore.sql"
 fi

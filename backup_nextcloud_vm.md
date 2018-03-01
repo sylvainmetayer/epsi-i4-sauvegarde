@@ -2,38 +2,40 @@
 
 ## Setup
 
-1. Create an user 'epsi-backup' and add to this user a ssh key *without* passphrase.
+1. `sudo apt update && sudo apt install mysql-server mysql-client rsync curl ssh`
+
+2. Create an user 'epsi-backup' upload files and run setup_secret.sh.
 
     ```bash
     # sudo adduser epsi-backup && sudo su epsi-backup
-    $ ssh-keygen -t rsa -b 8192 -C "BACKUP@BACKUP"
+    $ scp restore.sh epsi-backup@192.200.0.3:~
+    $ scp restore_vars.sh epsi-backup@192.200.0.3:~/vars.sh
+    $ vim ~/vars.sh # Fill values on backup host, as epsi-backup
+    $ scp setup.sh epsi-backup@192.200.0.3:~
+    $ ./setup.sh
     ```
 
-2. add to the `/home/epsi-nextcloud/.ssh/authorized_keys` the public key of  `epsi-backup` user (from the Backup VM)
+3. add to the `/home/epsi-nextcloud/.ssh/authorized_keys` the public key of  `epsi-backup` user
 
-3. Copy restore.sh script to the $HOME of epsi-backup. `scp restore.sh epsi-backup@192.200.0.3:~`
-
-4. `sudo apt update && sudo apt install mysql-server mysql-client rsync curl`
-
-5. Set up SLAVE MySQL.
+4. Set up SLAVE MySQL.
 
     a. You first need to setup the MASTER MySQL on nextcloud instance.
 
     b. get the dump of the master database.
 
-    c. create a database 'nextcloud'
+    c. create a database 'nextcloud' `mysql> create database nextcloud;`
 
     d. import the dump of the master database. `mysql -u root -p nextcloud < script.sql`
 
-    e. edit the MySQL configuration located at `/etc/mysql/mariadb.conf.d/50-server.cnf` and adapt the configuration.
+    e. edit the MySQL configuration located at `/etc/mysql/mysql.conf.d/mysqld.cnf` and adapt the configuration.
 
         - server-id = 2
         - log_bin = /var/log/mysql/mysql-bin.log
         - binlog_do_db = nextcloud
 
-    f. restart mysql : `sudo service mysql restart`
+    f. restart mysql : `# sudo service mysql restart`
 
-    g. open a terminal MySQL as root and type the following : 
+    g. open a terminal MySQL as root and type the following :
 
         - CHANGE MASTER TO MASTER_HOST='192.200.0.2',MASTER_USER='slave',MASTER_PASSWORD='slave',MASTER_LOG_FILE='mysql-bin.000005',MASTER_LOG_POS=327;
             - Adapt the MASTER_LOG_FILE and MASTER_LOG_POS with the values you got while setting up the master database
@@ -47,15 +49,7 @@
         - GRANT REPLICATION SLAVE on *.* to 'backup'@'localhost';
         - flush privileges;
 
-6. Fill the required data in `restore.sh`
-
-    ```bash
-    SSH_DETAILS="epsi-nextcloud@192.168.56.101" # The ssh_details to access to the nextcloud VM
-    BACKUP_LOCATION="/home/epsi-backup/backup" # The location of your backup, on the Backup VM. /!\ No trailing '/' /!\
-    RESTAURATION_LOCATION="/var/www/html/nextcloud" # Where you want to restore the data, on the nextcloud VM. /!\ No trailing '/' /!\
-    ```
-
-7. `sudo mysql_secure_installation` (optional, but recommanded)
+5. `sudo mysql_secure_installation` (optional, but recommanded)
 
 ## Restauration
 
