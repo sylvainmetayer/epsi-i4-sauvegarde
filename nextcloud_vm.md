@@ -73,5 +73,5 @@
 
 ## Cron example
 
-`$ crontab -e # As epsi-nextcloud`
-`0 */12 * * * /home/epsi-nextcloud/backup.sh >/dev/null 2>&1`
+- `$ crontab -e # As epsi-nextcloud`
+- `0 */12 * * * /home/epsi-nextcloud/backup.sh >/dev/null 2>&1`
